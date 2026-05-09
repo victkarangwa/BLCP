@@ -1,0 +1,235 @@
+// ─────────────────────────────────────────────────────────────────────────────
+//  Bank Licensing & Compliance Portal — Prisma schema
+//
+//  Design decisions documented inline. The hand-written SQL additions
+//  (CHECK constraint, sequence, REVOKE) live in the migration file, not here.
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Migrations connect with the admin role (different URL).
+  // Prisma reads from `directUrl` for migrations and `url` for runtime.
+  directUrl = env("DATABASE_ADMIN_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+// Postgres enums (not string columns) — invalid values cannot exist at all.
+
+enum UserRole {
+  APPLICANT
+  REVIEWER
+  APPROVER
+  ADMIN
+}
+
+enum ApplicationState {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  INFO_REQUESTED
+  RESUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum AuditAction {
+  // Lifecycle
+  APPLICATION_CREATED
+  APPLICATION_SUBMITTED
+  APPLICATION_RESUBMITTED
+  // Review/Approval
+  REVIEW_STARTED
+  INFO_REQUESTED
+  REVIEW_COMPLETED
+  APPLICATION_APPROVED
+  APPLICATION_REJECTED
+  // Documents
+  DOCUMENT_UPLOADED
+  DOCUMENT_VERSIONED
+  // Auth/Admin
+  USER_LOGGED_IN
+  USER_LOGGED_OUT
+  USER_LOGIN_FAILED
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         UserRole
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  applicationsCreated   Application[]    @relation("ApplicationApplicant")
+  applicationsReviewing Application[]    @relation("ApplicationReviewer")
+  applicationsApproving Application[]    @relation("ApplicationApprover")
+  documentsUploaded     Document[]
+  auditLogs             AuditLog[]
+  sessions              Session[]
+  idempotencyKeys       IdempotencyKey[]
+
+  @@index([role])
+}
+
+// ─── Session ─────────────────────────────────────────────────────────────────
+// JWT carries `sid` claim; this row backs revocation. Logout deletes it.
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  csrfToken String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ─── Application ─────────────────────────────────────────────────────────────
+// `version` is the optimistic-locking counter. Every transition uses
+// UPDATE ... WHERE version = ? AND id = ? and increments it. A 0-row
+// result indicates concurrent modification → 409.
+
+model Application {
+  id              String           @id @default(uuid())
+  // Human-readable identifier (BLCP-2026-00042). Generated server-side
+  // via the `application_reference_seq` Postgres sequence.
+  referenceCode   String           @unique
+  institutionName String
+  licenseType     String
+  state           ApplicationState @default(DRAFT)
+  version         Int              @default(0)
+
+  applicantId String
+  reviewerId  String?
+  approverId  String?
+
+  applicant   User  @relation("ApplicationApplicant", fields: [applicantId], references: [id], onDelete: Restrict)
+  reviewer    User? @relation("ApplicationReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
+  approver    User? @relation("ApplicationApprover", fields: [approverId], references: [id], onDelete: Restrict)
+
+  // Cycle context
+  infoRequestNote String?
+  decisionNote    String?
+  decidedAt       DateTime?
+
+  documents Document[]
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes match the queries we'll actually run:
+  // - "list by state" for queues
+  // - "my applications" for applicants
+  // - "my queue" combinations for reviewer/approver
+  @@index([state])
+  @@index([applicantId])
+  @@index([reviewerId])
+  @@index([approverId])
+  @@index([state, reviewerId])
+  @@index([state, approverId])
+}
+
+// ─── Document ────────────────────────────────────────────────────────────────
+// Immutable rows. Replacement = INSERT new row with version + 1.
+// Never UPDATE. SHA-256 enables tamper detection and content addressing.
+
+model Document {
+  id            String @id @default(uuid())
+  applicationId String
+  uploadedById  String
+
+  documentType String
+  version      Int
+
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  sha256       String
+  storagePath  String
+
+  uploadedAt DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  uploadedBy  User        @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  @@unique([applicationId, documentType, version])
+  @@index([applicationId])
+}
+
+// ─── Audit Log ───────────────────────────────────────────────────────────────
+// Append-only. Two enforcement layers:
+//   1. AuditService exposes only record() / recordWithTx() — no update/delete.
+//   2. Migration REVOKEs UPDATE/DELETE/TRUNCATE on this table from the app role.
+//
+// `actorEmail` and `actorRole` are captured at write time. We do NOT join
+// to User for them at read time, because users get renamed/deactivated and
+// the historical record must reflect what was true when the action happened.
+//
+// `actorId` is nullable to support failed-login audits where no user is known.
+
+model AuditLog {
+  id String @id @default(uuid())
+
+  actorId    String?
+  actorEmail String
+  actorRole  UserRole?
+
+  action        AuditAction
+  applicationId String?
+
+  previousState ApplicationState?
+  newState      ApplicationState?
+
+  metadata Json?
+
+  ipAddress String?
+  userAgent String?
+
+  occurredAt DateTime @default(now())
+
+  actor       User?        @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+
+  @@index([applicationId, occurredAt])
+  @@index([actorId, occurredAt])
+  @@index([action, occurredAt])
+}
+
+// ─── Idempotency Key ─────────────────────────────────────────────────────────
+// For POST endpoints that can produce duplicates on retry
+// (currently: POST /applications, POST /applications/:id/documents).
+// The interceptor stores (key, userId) → (status, body) for 24h
+// and replays the original response on duplicate requests.
+
+model IdempotencyKey {
+  key          String @id
+  userId       String
+  method       String
+  path         String
+  // SHA-256 of the request body. Same key + different body = client bug, return 409.
+  requestHash  String
+  status       Int
+  responseBody Json
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
