@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+      - name: Lint
+        run: npm run lint --workspaces --if-present
+      - name: Typecheck (api build)
+        run: npm run build --workspace apps/api
+
+  backend-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bnr_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      # Migrations as admin (postgres user, full privileges).
+      DATABASE_ADMIN_URL: postgresql://postgres:postgres@localhost:5432/bnr_test
+      # The app and tests connect as bnr_app (restricted role).
+      # This is what makes the audit-immutability test prove anything.
+      DATABASE_URL: postgresql://bnr_app:bnr_app_pw@localhost:5432/bnr_test
+      JWT_SECRET: dev-only-secret-for-ci-32-bytes-or-more-and-this-string-passes
+      FRONTEND_ORIGIN: http://localhost:3001
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Create bnr_app role
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d bnr_test <<-SQL
+            CREATE ROLE bnr_app WITH LOGIN PASSWORD 'bnr_app_pw';
+            GRANT CONNECT ON DATABASE bnr_test TO bnr_app;
+          SQL
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: Apply migrations as admin
+        working-directory: apps/api
+        env:
+          DATABASE_URL: ${{ env.DATABASE_ADMIN_URL }}
+        run: npx prisma migrate deploy
+
+      - name: Backend tests
+        working-directory: apps/api
+        run: npm test
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - working-directory: apps/web
+        run: npm run build
