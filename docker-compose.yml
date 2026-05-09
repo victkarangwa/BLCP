@@ -1,0 +1,73 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Bank Licensing & Compliance Portal — Docker Compose
+#
+#  Brings up:
+#    db   — Postgres 16 with two-role init (bnr_admin, bnr_app)
+#    api  — NestJS backend on :3000 (development with hot reload)
+#    web  — Next.js frontend on :3001
+#
+#  For local development you can use just `docker compose up db` and run
+#  the apps with `npm run dev:api` / `npm run dev:web` for faster iteration.
+#  The full stack (`docker compose up`) mirrors a production-like environment.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: bnr-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bnr_portal
+    ports:
+      - "5432:5432"
+    volumes:
+      - bnr-db-data:/var/lib/postgresql/data
+      # Init script runs once on first container start (empty data dir).
+      # Creates the bnr_admin and bnr_app roles.
+      - ./docker/postgres/init-roles.sql:/docker-entrypoint-initdb.d/01-init-roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bnr_portal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: bnr-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://bnr_app:app_pw_change_me@db:5432/bnr_portal
+      DATABASE_ADMIN_URL: postgresql://bnr_admin:admin_pw_change_me@db:5432/bnr_portal
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-please-change-in-prod-32-bytes-min}
+      FRONTEND_ORIGIN: http://localhost:3001
+      STORAGE_ROOT: /app/storage
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/api/storage:/app/storage
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: bnr-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_BASE: http://localhost:3000/api/v1
+    ports:
+      - "3001:3001"
+
+volumes:
+  bnr-db-data:
