@@ -8,7 +8,10 @@ import { Skeleton } from '@/components/skeleton';
 import { ErrorState } from '@/components/error-state';
 import { StateBadge } from '@/components/state-badge';
 import { ApplicationActions } from '@/components/application-actions';
-import type { ApplicationDetail } from '@/types/application';
+import { DocumentList } from '@/components/document-list';
+import { DocumentUpload } from '@/components/document-upload';
+import { useMe } from '@/hooks/use-me';
+import type { ApplicationDetail, ApplicationState } from '@/types/application';
 
 /**
  * Application detail page.
@@ -27,6 +30,7 @@ export default function ApplicationDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const { data: me } = useMe();
   const { data, error, isLoading, refetch } = useQuery<ApplicationDetail>({
     queryKey: queryKeys.applications.detail(id),
     queryFn: () => api<ApplicationDetail>(`/applications/${id}`),
@@ -89,9 +93,28 @@ export default function ApplicationDetailPage({
         </dl>
       </section>
 
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-gray-900">Documents</h2>
+        <DocumentList applicationId={data.id} />
+        {me?.id === data.applicantId && isMutableForUploads(data.state) && (
+          <div className="mt-4">
+            <DocumentUpload applicationId={data.id} />
+          </div>
+        )}
+      </section>
+
       <ApplicationActions applicationId={data.id} />
     </div>
   );
+}
+
+/**
+ * Documents can be uploaded only in states where the applicant is allowed
+ * to mutate content. Mirrors the backend's state-gate so we don't render
+ * an upload form that would 409 on submit.
+ */
+function isMutableForUploads(state: ApplicationState): boolean {
+  return state === 'DRAFT' || state === 'INFO_REQUESTED' || state === 'RESUBMITTED';
 }
 
 function Party({
