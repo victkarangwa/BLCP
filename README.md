@@ -34,7 +34,7 @@ URLs once running:
 - Frontend: <http://localhost:3001>
 - API: <http://localhost:3000/api/v1>
 - Swagger: <http://localhost:3000/api/docs>
-- Postgres: localhost:5432
+- Postgres: localhost:5434 (host port; container internally exposes 5432; 5432/5433 were in use on the dev machine)
 
 ---
 
