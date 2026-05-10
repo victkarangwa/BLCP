@@ -1,21 +1,31 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 import configuration from './config/configuration';
 import { validationSchema } from './config/validation.schema';
 import { PrismaModule } from './common/prisma/prisma.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { CsrfMiddleware } from './modules/auth/middleware/csrf.middleware';
 
 /**
  * Root module.
  *
- * Currently wires only foundational infrastructure:
- *   - ConfigModule: env loading + Joi validation, fails fast on bad config.
- *   - ThrottlerModule: per-IP rate limiting (used selectively on /auth/login).
- *   - PrismaModule: global DB client.
+ * Global guards via APP_GUARD:
+ *   - ThrottlerGuard: rate limiting for everything; specific endpoints can
+ *     declare tighter buckets via @Throttle().
+ *   - JwtAuthGuard: default-deny posture — every endpoint requires auth
+ *     unless explicitly @Public().
  *
- * Feature modules (Auth, Users, Applications, Documents, Audit) get added
- * here as they're built. Each lives in its own folder under src/modules/.
+ * The order in the providers array matters: ThrottlerGuard runs first
+ * (cheapest rejection), then JwtAuthGuard.
+ *
+ * CSRF middleware is applied to all routes; it short-circuits internally
+ * for safe methods (GET/HEAD/OPTIONS) and the login endpoint.
  */
 @Module({
   imports: [
@@ -26,10 +36,20 @@ import { PrismaModule } from './common/prisma/prisma.module';
       validationOptions: { abortEarly: true },
     }),
     ThrottlerModule.forRoot([
-      // Default bucket. Auth controller will declare a tighter throttler.
       { name: 'default', ttl: 60_000, limit: 100 },
     ]),
     PrismaModule,
+    AuthModule,
+    UsersModule,
+    AuditModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(CsrfMiddleware).forRoutes('*');
+  }
+}
