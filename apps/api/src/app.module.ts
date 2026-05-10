@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { CsrfMiddleware } from './modules/auth/middleware/csrf.middleware';
 
@@ -44,6 +45,7 @@ import { CsrfMiddleware } from './modules/auth/middleware/csrf.middleware';
     UsersModule,
     AuditModule,
     ApplicationsModule,
+    DocumentsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

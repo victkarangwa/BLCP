@@ -202,6 +202,15 @@ export class ApplicationsService {
   // ── Visibility filter (row-level security) ────────────────────────────
 
   /**
+   * Public accessor for the visibility filter. Other modules (Documents)
+   * need to scope queries by the same row-level rules; rather than
+   * re-implement them, they call this and compose into their own WHERE.
+   */
+  visibilityFilterFor(user: AuthenticatedUser): Prisma.ApplicationWhereInput {
+    return this.visibilityFilter(user);
+  }
+
+  /**
    * Returns a Prisma WHERE fragment that restricts which application rows
    * this user can see. This is THE row-level security mechanism for reads.
    *

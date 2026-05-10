@@ -81,6 +81,39 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return { status, body: { error: { code, message, requestId, details } } };
     }
 
+    // 3a. Multer errors → useful HTTP responses for upload failures.
+    //     LIMIT_FILE_SIZE is the common one (5 MB cap).
+    if (
+      typeof exception === 'object' &&
+      exception !== null &&
+      'name' in exception &&
+      (exception as { name: string }).name === 'MulterError'
+    ) {
+      const code = (exception as { code?: string }).code;
+      if (code === 'LIMIT_FILE_SIZE') {
+        return {
+          status: HttpStatus.PAYLOAD_TOO_LARGE,
+          body: {
+            error: {
+              code: 'DOCUMENT_TOO_LARGE',
+              message: 'File exceeds the 5 MB limit',
+              requestId,
+            },
+          },
+        };
+      }
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        body: {
+          error: {
+            code: 'UPLOAD_ERROR',
+            message: (exception as Error).message ?? 'Upload failed',
+            requestId,
+          },
+        },
+      };
+    }
+
     // 3. Known Prisma errors → useful HTTP responses.
     if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       if (exception.code === 'P2002') {
