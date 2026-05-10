@@ -1,13 +1,16 @@
 import { redirect } from 'next/navigation';
 
 /**
- * Root URL → /portal.
+ * Root URL → /applications.
  *
- * If the user is authenticated, the portal layout shows them the right
- * landing page (/applications). If not, the portal layout's auth gate
- * redirects them to /login. Either way, no decision logic here — defer
- * to the layout that has the user state.
+ * The applications page sits inside the (portal) route group, so the
+ * (portal)/layout auth gate runs first. Unauthenticated users get
+ * redirected to /login from there. Authenticated users see their
+ * role-filtered application list.
+ *
+ * We don't have a separate /portal URL: the route group's parens are
+ * non-routing, so `(portal)/applications/page.tsx` is just `/applications`.
  */
 export default function Home() {
-  redirect('/portal');
+  redirect('/applications');
 }

@@ -34,7 +34,7 @@ export default function LoginPage() {
       }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: queryKeys.me });
-      router.push('/portal');
+      router.push('/applications');
     },
   });
 
