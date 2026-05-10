@@ -1,7 +1,21 @@
 @import "tailwindcss";
 
+/**
+ * Light-mode-only design.
+ *
+ * The portal is an internal regulator tool: applicants, reviewers, and
+ * approvers see the same surfaces, and we don't ship dark variants for any
+ * of the form/card/badge components. Honoring prefers-color-scheme: dark
+ * would flip the background to near-black while leaving white cards
+ * untouched — disorienting and reduces contrast on inputs. Out of scope.
+ *
+ * We also explicitly opt out of automatic dark UA styling for form
+ * controls by setting color-scheme: light on :root.
+ */
+
 :root {
-  --background: #ffffff;
+  color-scheme: light;
+  --background: #f9fafb; /* matches Tailwind bg-gray-50 used in body class */
   --foreground: #171717;
 }
 
@@ -12,15 +26,6 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
