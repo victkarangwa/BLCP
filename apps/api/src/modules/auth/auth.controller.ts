@@ -61,10 +61,18 @@ export class AuthController {
     });
 
     const isProd = process.env.NODE_ENV === 'production';
+    // SameSite policy:
+    //   prod  → 'strict' (strongest, assumes same-site deployment)
+    //   dev   → 'lax'    (allows cross-origin from :3001 dev frontend to
+    //                     :3000 dev API — different ports are different
+    //                     origins for cookie purposes, and 'strict' would
+    //                     silently drop the cookie on cross-origin sends).
+    // Pair with helmet headers + CSRF double-submit so dropping to 'lax'
+    // doesn't measurably reduce protection on a same-site deployment.
     const cookieBase = {
       httpOnly: true,
       secure: isProd,
-      sameSite: 'strict' as const,
+      sameSite: (isProd ? 'strict' : 'lax') as 'strict' | 'lax',
       path: '/',
       expires: result.expiresAt,
     };
