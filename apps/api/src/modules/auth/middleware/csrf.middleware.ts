@@ -32,13 +32,23 @@ import { Request, Response, NextFunction } from 'express';
  *     for this endpoint.
  */
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-const EXEMPT_PATHS = new Set(['/api/v1/auth/login']);
+// Endpoints exempt from CSRF check.
+//   /auth/login — no session yet, nothing to verify against.
+//
+// We match against suffix so the check works whether middleware sees the
+// path with or without the /api/v1 prefix (Express middleware order vs.
+// Nest's setGlobalPrefix can shift this depending on where we're applied).
+const EXEMPT_SUFFIXES = ['/auth/login'];
 
 @Injectable()
 export class CsrfMiddleware implements NestMiddleware {
   use(req: Request, _res: Response, next: NextFunction) {
     if (SAFE_METHODS.has(req.method)) return next();
-    if (EXEMPT_PATHS.has(req.path)) return next();
+
+    const url = req.originalUrl ?? req.url ?? req.path;
+    if (EXEMPT_SUFFIXES.some((suffix) => url.endsWith(suffix))) {
+      return next();
+    }
 
     const cookieToken = req.cookies?.bnr_csrf;
     const headerToken = req.headers['x-csrf-token'];
