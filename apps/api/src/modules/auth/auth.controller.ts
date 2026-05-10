@@ -7,7 +7,7 @@ import {
   Res,
   HttpCode,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 
@@ -15,7 +15,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { AuthenticatedUser } from './strategies/jwt.strategy';
+import type { AuthenticatedUser } from './strategies/jwt.strategy';
 
 /**
  * Auth endpoints.
