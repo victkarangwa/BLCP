@@ -21,7 +21,9 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: bnr_portal
     ports:
-      - "5432:5432"
+      # Host port 5433 to avoid conflict with a system Postgres on 5432.
+      # Inside Docker network the container is still reachable on 5432.
+      - "5434:5432"
     volumes:
       - bnr-db-data:/var/lib/postgresql/data
       # Init script runs once on first container start (empty data dir).
