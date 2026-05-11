@@ -55,6 +55,9 @@ enum AuditAction {
   USER_LOGGED_IN
   USER_LOGGED_OUT
   USER_LOGIN_FAILED
+  // Admin user management
+  USER_CREATED
+  USER_UPDATED
 }
 
 // ─── User ────────────────────────────────────────────────────────────────────

@@ -10,6 +10,7 @@ import { StateBadge } from '@/components/state-badge';
 import { ApplicationActions } from '@/components/application-actions';
 import { DocumentList } from '@/components/document-list';
 import { DocumentUpload } from '@/components/document-upload';
+import { AuditTimeline } from '@/components/audit-timeline';
 import { useMe } from '@/hooks/use-me';
 import type { ApplicationDetail, ApplicationState } from '@/types/application';
 
@@ -104,6 +105,11 @@ export default function ApplicationDetailPage({
       </section>
 
       <ApplicationActions applicationId={data.id} />
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-gray-900">History</h2>
+        <AuditTimeline applicationId={data.id} />
+      </section>
     </div>
   );
 }

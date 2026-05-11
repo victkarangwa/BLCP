@@ -60,10 +60,14 @@ export function DocumentUpload({ applicationId }: { applicationId: string }) {
       qc.invalidateQueries({
         queryKey: queryKeys.documents.forApplication(applicationId),
       });
-      // The audit-trail view (when we add it) lives under the application;
-      // invalidate the application detail too so its updatedAt refreshes.
+      // Detail (updatedAt) + audit timeline (new DOCUMENT_UPLOADED row).
+      // queryKeys.applications.audit() is a prefix-match below
+      // applications.all, but we invalidate explicitly for clarity.
       qc.invalidateQueries({
         queryKey: queryKeys.applications.detail(applicationId),
+      });
+      qc.invalidateQueries({
+        queryKey: queryKeys.applications.audit(applicationId),
       });
       setFile(null);
       setClientError(null);
