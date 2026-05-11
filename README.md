@@ -206,6 +206,9 @@ The deferred tests above codify properties I already verified by hand during con
 - **i18n.** English only.
 - **Refresh tokens.** 1-hour JWTs, no refresh — by design for a regulator portal.
 
+### Quick note
+The architectural decisions — modular monolith, optimistic locking, two-role Postgres for audit immutability, three-layer reviewer-≠-approver, the deliberate omissions in DESIGN.md — are mine, made after weighing alternatives. So due to a tight timeline and since the spec asks for honesty  about authorship, I used AI assistant to generate some part of the codebase especially for documentation to help the reviewers to walk through the codebase.However, I can walk through any file in the interview; ask about specific lines and the alternatives I rejected.
+
 ---
 
 ## Further reading
