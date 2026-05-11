@@ -69,10 +69,11 @@ export class AuthController {
     //                     silently drop the cookie on cross-origin sends).
     // Pair with helmet headers + CSRF double-submit so dropping to 'lax'
     // doesn't measurably reduce protection on a same-site deployment.
+    const sameSite: 'strict' | 'lax' = isProd ? 'strict' : 'lax';
     const cookieBase = {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'strict' : 'lax',
+      sameSite,
       path: '/',
       expires: result.expiresAt,
     };
