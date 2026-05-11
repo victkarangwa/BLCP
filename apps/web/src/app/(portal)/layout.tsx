@@ -72,6 +72,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               New application
             </NavLink>
           )}
+          {me.role === 'ADMIN' && (
+            <NavLink href="/admin/users" pathname={pathname}>
+              Users
+            </NavLink>
+          )}
         </nav>
 
         <button

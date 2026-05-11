@@ -11,6 +11,7 @@ import { ApplicationActions } from '@/components/application-actions';
 import { DocumentList } from '@/components/document-list';
 import { DocumentUpload } from '@/components/document-upload';
 import { AuditTimeline } from '@/components/audit-timeline';
+import { DraftEdit } from '@/components/draft-edit';
 import { useMe } from '@/hooks/use-me';
 import type { ApplicationDetail, ApplicationState } from '@/types/application';
 
@@ -54,7 +55,16 @@ export default function ApplicationDetailPage({
             </h1>
             <div className="mt-1 text-sm text-gray-600">{data.licenseType}</div>
           </div>
-          <StateBadge state={data.state} />
+          <div className="flex flex-col items-end gap-2">
+            <StateBadge state={data.state} />
+            {data.state === 'DRAFT' && me?.id === data.applicantId && (
+              <DraftEdit
+                applicationId={data.id}
+                initialInstitutionName={data.institutionName}
+                initialLicenseType={data.licenseType}
+              />
+            )}
+          </div>
         </div>
 
         {data.infoRequestNote && data.state === 'INFO_REQUESTED' && (

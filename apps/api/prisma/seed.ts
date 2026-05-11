@@ -215,6 +215,36 @@ async function seedApplications(users: Awaited<ReturnType<typeof seedUsers>>) {
         reason: 'All regulatory requirements met. License granted with annual review condition.',
       },
     ]);
+
+    // ── REJECTED: terminal in the other direction ────────────────────────
+    // Demonstrates that approver can also REJECT after review.
+    await driveTo(applicant2, 'Underfunded Bank Ltd.', 'COMMERCIAL_BANK', [
+      { user: applicant2, action: WorkflowAction.SUBMIT },
+      { user: reviewer1, action: WorkflowAction.START_REVIEW },
+      {
+        user: approver1,
+        action: WorkflowAction.REJECT,
+        reason: 'Insufficient capital reserves. Reapply after meeting the minimum capital requirement.',
+      },
+    ]);
+
+    // ── RESUBMITTED: the full loop. Reviewer asks for info, applicant
+    //    fixes the gap, resubmits, but no reviewer has picked it up again
+    //    yet so it sits in RESUBMITTED — different state from INFO_REQUESTED.
+    await driveTo(applicant1, 'Kigali Forex Services Ltd.', 'FOREX_BUREAU', [
+      { user: applicant1, action: WorkflowAction.SUBMIT },
+      { user: reviewer2, action: WorkflowAction.START_REVIEW },
+      {
+        user: reviewer2,
+        action: WorkflowAction.REQUEST_INFO,
+        reason: 'Please attach the directors\' KYC documents.',
+      },
+      {
+        user: applicant1,
+        action: WorkflowAction.RESUBMIT,
+        reason: 'Attached director KYC documents as requested.',
+      },
+    ]);
   } finally {
     await app.close();
   }
