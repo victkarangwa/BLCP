@@ -40,10 +40,14 @@ jobs:
           - 5432:5432
 
     env:
-      # Migrations as admin (postgres user, full privileges).
-      DATABASE_ADMIN_URL: postgresql://postgres:postgres@localhost:5432/bnr_test
-      # The app and tests connect as bnr_app (restricted role).
-      # This is what makes the audit-immutability test prove anything.
+      # Mirrors docker/postgres/init-roles.sql exactly:
+      #   bnr_admin owns the schema and runs migrations (CREATEDB).
+      #   bnr_app is the restricted runtime role (the app + tests connect as this).
+      # Running migrations as bnr_admin (not the bootstrap `postgres` superuser)
+      # is what makes the migration's ALTER DEFAULT PRIVILEGES FOR ROLE bnr_admin
+      # do useful work — future tables created by bnr_admin will auto-grant
+      # the right privileges to bnr_app.
+      DATABASE_ADMIN_URL: postgresql://bnr_admin:admin_pw_ci@localhost:5432/bnr_test
       DATABASE_URL: postgresql://bnr_app:bnr_app_pw@localhost:5432/bnr_test
       JWT_SECRET: dev-only-secret-for-ci-32-bytes-or-more-and-this-string-passes
       FRONTEND_ORIGIN: http://localhost:3001
@@ -57,23 +61,31 @@ jobs:
           cache: 'npm'
       - run: npm ci
 
-      - name: Create bnr_app role
+      - name: Create bnr_admin + bnr_app roles
         run: |
           PGPASSWORD=postgres psql -h localhost -U postgres -d bnr_test <<-SQL
-            CREATE ROLE bnr_app WITH LOGIN PASSWORD 'bnr_app_pw';
+            -- Mirrors docker/postgres/init-roles.sql for local dev.
+            CREATE ROLE bnr_admin WITH LOGIN PASSWORD 'admin_pw_ci' CREATEDB;
+            CREATE ROLE bnr_app   WITH LOGIN PASSWORD 'bnr_app_pw';
+
+            -- Hand the database over to bnr_admin so migrations run as
+            -- the same role they will in production deployment.
+            ALTER DATABASE bnr_test OWNER TO bnr_admin;
+
+            GRANT CONNECT ON DATABASE bnr_test TO bnr_admin;
             GRANT CONNECT ON DATABASE bnr_test TO bnr_app;
           SQL
 
       - name: Generate Prisma client
         run: npm run prisma:generate
 
-      - name: Apply migrations as admin
+      - name: Apply migrations as bnr_admin
         working-directory: apps/api
         env:
           DATABASE_URL: ${{ env.DATABASE_ADMIN_URL }}
         run: npx prisma migrate deploy
 
-      - name: Backend tests
+      - name: Backend tests (unit)
         working-directory: apps/api
         run: npm test
 
