@@ -6,7 +6,7 @@ import {
 } from './documents.controller';
 import { DocumentsService } from './documents.service';
 import { LocalStorageService } from './storage/local-storage.service';
-import { STORAGE_SERVICE } from './storage/storage.interface';
+import { StorageService } from './storage/storage.interface';
 import { AuditModule } from '../audit/audit.module';
 import { ApplicationsModule } from '../applications/applications.module';
 import { AuthModule } from '../auth/auth.module';
@@ -18,16 +18,16 @@ import { AuthModule } from '../auth/auth.module';
  *   - Imports ApplicationsModule (visibility filter + state lookups).
  *   - Imports AuthModule (RolesGuard/AuthenticatedUser).
  *
- *   - Binds STORAGE_SERVICE to LocalStorageService. Swapping to S3 means
- *     replacing this binding with an S3StorageService; the consumers
- *     don't change.
+ *   - Binds the abstract StorageService class to LocalStorageService.
+ *     DocumentsService injects StorageService; Nest resolves it through
+ *     this `useClass` mapping. Swapping to S3 is a one-line change here.
  */
 @Module({
   imports: [AuditModule, ApplicationsModule, AuthModule],
   controllers: [DocumentsController, DocumentDownloadController],
   providers: [
     DocumentsService,
-    { provide: STORAGE_SERVICE, useClass: LocalStorageService },
+    { provide: StorageService, useClass: LocalStorageService },
   ],
   exports: [DocumentsService],
 })

@@ -2,7 +2,6 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
-  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -14,10 +13,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
 import { isTerminal } from '../applications/workflow/state-machine';
-import {
-  STORAGE_SERVICE,
-  type StorageService,
-} from './storage/storage.interface';
+import { StorageService } from './storage/storage.interface';
 
 /**
  * DocumentsService — upload, list, stream.
@@ -91,7 +87,9 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
-    @Inject(STORAGE_SERVICE) private readonly storage: StorageService,
+    // Nest looks up StorageService by class identity; LocalStorageService
+    // is bound to this token via the module's providers list.
+    private readonly storage: StorageService,
   ) {}
 
   // ── Upload ────────────────────────────────────────────────────────────

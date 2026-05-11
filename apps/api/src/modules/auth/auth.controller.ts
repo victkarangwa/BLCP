@@ -72,8 +72,6 @@ export class AuthController {
     const cookieBase = {
       httpOnly: true,
       secure: isProd,
-      // Cast keeps Express's CookieOptions overload happy — without it the
-      // string literal widens to `string`, which doesn't match the union.
       sameSite: isProd ? 'strict' : 'lax',
       path: '/',
       expires: result.expiresAt,
@@ -112,9 +110,6 @@ export class AuthController {
 
   @Get('me')
   @ApiOperation({ summary: 'Get the currently authenticated user' })
-  // Not async: nothing here awaits anything. JwtStrategy.validate has
-  // already populated req.user; we just project the safe fields. Nest
-  // serializes plain objects the same way as resolved promises.
   me(@CurrentUser() user: AuthenticatedUser) {
     return {
       id: user.id,
