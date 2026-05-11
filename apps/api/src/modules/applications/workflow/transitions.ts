@@ -84,7 +84,8 @@ export const TRANSITIONS: readonly TransitionRule[] = [
     from: ApplicationState.DRAFT,
     to: ApplicationState.SUBMITTED,
     canAct: (a) => a.role === UserRole.APPLICANT && a.isApplicant,
-    forbiddenReason: 'Only the applicant who owns this application can submit it',
+    forbiddenReason:
+      'Only the applicant who owns this application can submit it',
   },
 
   // ── SUBMITTED → UNDER_REVIEW (any reviewer claims it) ────────────────
@@ -107,7 +108,8 @@ export const TRANSITIONS: readonly TransitionRule[] = [
     from: ApplicationState.RESUBMITTED,
     to: ApplicationState.UNDER_REVIEW,
     canAct: (a) => a.role === UserRole.REVIEWER && a.isAssignedReviewer,
-    forbiddenReason: 'Only the originally assigned reviewer can continue this review',
+    forbiddenReason:
+      'Only the originally assigned reviewer can continue this review',
   },
 
   // ── UNDER_REVIEW → INFO_REQUESTED ────────────────────────────────────
@@ -128,7 +130,8 @@ export const TRANSITIONS: readonly TransitionRule[] = [
     from: ApplicationState.INFO_REQUESTED,
     to: ApplicationState.RESUBMITTED,
     canAct: (a) => a.role === UserRole.APPLICANT && a.isApplicant,
-    forbiddenReason: 'Only the applicant who owns this application can resubmit it',
+    forbiddenReason:
+      'Only the applicant who owns this application can resubmit it',
   },
 
   // ── UNDER_REVIEW → APPROVED ──────────────────────────────────────────

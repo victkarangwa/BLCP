@@ -164,7 +164,9 @@ export class ApplicationsController {
 
   @Roles(UserRole.APPLICANT)
   @Post(':id/resubmit')
-  @ApiOperation({ summary: 'Resubmit after requested information was provided' })
+  @ApiOperation({
+    summary: 'Resubmit after requested information was provided',
+  })
   async resubmit(
     @Param('id') id: string,
     @Body() dto: ResubmitDto,

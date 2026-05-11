@@ -45,25 +45,23 @@ export class DocumentsController {
 
   @Post()
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Upload (or version) a document for an application' })
+  @ApiOperation({
+    summary: 'Upload (or version) a document for an application',
+  })
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: MAX_BYTES },
       // Reject anything other than the allowlist at the parser level so
       // we don't even buffer disallowed types into memory.
       fileFilter: (_req, file, cb) => {
-        const allowed = new Set([
-          'application/pdf',
-          'image/png',
-          'image/jpeg',
-        ]);
+        const allowed = new Set(['application/pdf', 'image/png', 'image/jpeg']);
         if (!allowed.has(file.mimetype)) {
           // Pass an error to multer; the global filter will translate.
           return cb(
             new BadRequestException({
               code: 'UNSUPPORTED_FILE_TYPE',
               message: `Unsupported MIME type: ${file.mimetype}`,
-            }) as unknown as Error,
+            }),
             false,
           );
         }
@@ -97,7 +95,9 @@ export class DocumentsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List documents (latest version per type) for an application' })
+  @ApiOperation({
+    summary: 'List documents (latest version per type) for an application',
+  })
   async list(
     @Param('applicationId') applicationId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -138,7 +138,10 @@ export class DocumentDownloadController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const visibility = this.applications.visibilityFilterFor(user);
-    const { doc, stream } = await this.documents.openForDownload(id, visibility);
+    const { doc, stream } = await this.documents.openForDownload(
+      id,
+      visibility,
+    );
 
     res.status(HttpStatus.OK);
     res.set({

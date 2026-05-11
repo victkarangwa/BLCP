@@ -86,47 +86,63 @@ describe('authorization matrix — what each role can do', () => {
     const owner = actor(UserRole.APPLICANT, { isApplicant: true });
 
     it('can SUBMIT their DRAFT', () => {
-      expect(check(ApplicationState.DRAFT, WorkflowAction.SUBMIT, owner))
-        .toBe('allow');
+      expect(check(ApplicationState.DRAFT, WorkflowAction.SUBMIT, owner)).toBe(
+        'allow',
+      );
     });
 
     it('can RESUBMIT after info request', () => {
-      expect(check(ApplicationState.INFO_REQUESTED, WorkflowAction.RESUBMIT, owner))
-        .toBe('allow');
+      expect(
+        check(ApplicationState.INFO_REQUESTED, WorkflowAction.RESUBMIT, owner),
+      ).toBe('allow');
     });
 
     it('cannot START_REVIEW (reviewer-only)', () => {
-      expect(check(ApplicationState.SUBMITTED, WorkflowAction.START_REVIEW, owner))
-        .toBe('deny:auth');
+      expect(
+        check(ApplicationState.SUBMITTED, WorkflowAction.START_REVIEW, owner),
+      ).toBe('deny:auth');
     });
 
     it('cannot REQUEST_INFO (reviewer-only)', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.REQUEST_INFO, owner))
-        .toBe('deny:auth');
+      expect(
+        check(
+          ApplicationState.UNDER_REVIEW,
+          WorkflowAction.REQUEST_INFO,
+          owner,
+        ),
+      ).toBe('deny:auth');
     });
 
     it('cannot APPROVE (approver-only)', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.APPROVE, owner))
-        .toBe('deny:auth');
+      expect(
+        check(ApplicationState.UNDER_REVIEW, WorkflowAction.APPROVE, owner),
+      ).toBe('deny:auth');
     });
 
     it('cannot REJECT (approver-only)', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.REJECT, owner))
-        .toBe('deny:auth');
+      expect(
+        check(ApplicationState.UNDER_REVIEW, WorkflowAction.REJECT, owner),
+      ).toBe('deny:auth');
     });
   });
 
   describe('APPLICANT (not the owner)', () => {
     const stranger = actor(UserRole.APPLICANT, { isApplicant: false });
 
-    it('cannot SUBMIT someone else\'s DRAFT', () => {
-      expect(check(ApplicationState.DRAFT, WorkflowAction.SUBMIT, stranger))
-        .toBe('deny:auth');
+    it("cannot SUBMIT someone else's DRAFT", () => {
+      expect(
+        check(ApplicationState.DRAFT, WorkflowAction.SUBMIT, stranger),
+      ).toBe('deny:auth');
     });
 
-    it('cannot RESUBMIT someone else\'s INFO_REQUESTED', () => {
-      expect(check(ApplicationState.INFO_REQUESTED, WorkflowAction.RESUBMIT, stranger))
-        .toBe('deny:auth');
+    it("cannot RESUBMIT someone else's INFO_REQUESTED", () => {
+      expect(
+        check(
+          ApplicationState.INFO_REQUESTED,
+          WorkflowAction.RESUBMIT,
+          stranger,
+        ),
+      ).toBe('deny:auth');
     });
   });
 
@@ -139,33 +155,39 @@ describe('authorization matrix — what each role can do', () => {
     const open = actor(UserRole.REVIEWER, { isAssignedReviewer: false });
 
     it('can START_REVIEW on SUBMITTED (claims the application)', () => {
-      expect(check(ApplicationState.SUBMITTED, WorkflowAction.START_REVIEW, open))
-        .toBe('allow');
+      expect(
+        check(ApplicationState.SUBMITTED, WorkflowAction.START_REVIEW, open),
+      ).toBe('allow');
     });
 
     it('cannot START_REVIEW on RESUBMITTED (must be the originally assigned reviewer)', () => {
-      expect(check(ApplicationState.RESUBMITTED, WorkflowAction.START_REVIEW, open))
-        .toBe('deny:auth');
+      expect(
+        check(ApplicationState.RESUBMITTED, WorkflowAction.START_REVIEW, open),
+      ).toBe('deny:auth');
     });
 
-    it('cannot REQUEST_INFO on UNDER_REVIEW they don\'t own', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.REQUEST_INFO, open))
-        .toBe('deny:auth');
+    it("cannot REQUEST_INFO on UNDER_REVIEW they don't own", () => {
+      expect(
+        check(ApplicationState.UNDER_REVIEW, WorkflowAction.REQUEST_INFO, open),
+      ).toBe('deny:auth');
     });
 
     it('cannot SUBMIT (applicant-only)', () => {
-      expect(check(ApplicationState.DRAFT, WorkflowAction.SUBMIT, open))
-        .toBe('deny:auth');
+      expect(check(ApplicationState.DRAFT, WorkflowAction.SUBMIT, open)).toBe(
+        'deny:auth',
+      );
     });
 
     it('cannot APPROVE (approver-only, regardless of role bleed-through)', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.APPROVE, open))
-        .toBe('deny:auth');
+      expect(
+        check(ApplicationState.UNDER_REVIEW, WorkflowAction.APPROVE, open),
+      ).toBe('deny:auth');
     });
 
     it('cannot REJECT (approver-only)', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.REJECT, open))
-        .toBe('deny:auth');
+      expect(
+        check(ApplicationState.UNDER_REVIEW, WorkflowAction.REJECT, open),
+      ).toBe('deny:auth');
     });
   });
 
@@ -173,13 +195,23 @@ describe('authorization matrix — what each role can do', () => {
     const assigned = actor(UserRole.REVIEWER, { isAssignedReviewer: true });
 
     it('can REQUEST_INFO on UNDER_REVIEW', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.REQUEST_INFO, assigned))
-        .toBe('allow');
+      expect(
+        check(
+          ApplicationState.UNDER_REVIEW,
+          WorkflowAction.REQUEST_INFO,
+          assigned,
+        ),
+      ).toBe('allow');
     });
 
     it('can START_REVIEW on RESUBMITTED (continuity of context)', () => {
-      expect(check(ApplicationState.RESUBMITTED, WorkflowAction.START_REVIEW, assigned))
-        .toBe('allow');
+      expect(
+        check(
+          ApplicationState.RESUBMITTED,
+          WorkflowAction.START_REVIEW,
+          assigned,
+        ),
+      ).toBe('allow');
     });
 
     it('still cannot APPROVE — the reviewer-≠-approver invariant', () => {
@@ -187,8 +219,9 @@ describe('authorization matrix — what each role can do', () => {
       // REVIEWER, not an APPROVER. The DB CHECK constraint and the
       // workflow service ID comparison are additional defense layers
       // (covered in the concurrency / workflow integration tests).
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.APPROVE, assigned))
-        .toBe('deny:auth');
+      expect(
+        check(ApplicationState.UNDER_REVIEW, WorkflowAction.APPROVE, assigned),
+      ).toBe('deny:auth');
     });
   });
 
@@ -202,48 +235,65 @@ describe('authorization matrix — what each role can do', () => {
     const approver = actor(UserRole.APPROVER);
 
     it('can APPROVE on UNDER_REVIEW', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.APPROVE, approver))
-        .toBe('allow');
+      expect(
+        check(ApplicationState.UNDER_REVIEW, WorkflowAction.APPROVE, approver),
+      ).toBe('allow');
     });
 
     it('can REJECT on UNDER_REVIEW', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.REJECT, approver))
-        .toBe('allow');
+      expect(
+        check(ApplicationState.UNDER_REVIEW, WorkflowAction.REJECT, approver),
+      ).toBe('allow');
     });
 
     it('cannot APPROVE on SUBMITTED — must pass through review first', () => {
-      expect(check(ApplicationState.SUBMITTED, WorkflowAction.APPROVE, approver))
-        .toBe('deny:illegal');
+      expect(
+        check(ApplicationState.SUBMITTED, WorkflowAction.APPROVE, approver),
+      ).toBe('deny:illegal');
     });
 
     it('cannot APPROVE on DRAFT', () => {
-      expect(check(ApplicationState.DRAFT, WorkflowAction.APPROVE, approver))
-        .toBe('deny:illegal');
+      expect(
+        check(ApplicationState.DRAFT, WorkflowAction.APPROVE, approver),
+      ).toBe('deny:illegal');
     });
 
     it('cannot SUBMIT (applicant-only)', () => {
-      expect(check(ApplicationState.DRAFT, WorkflowAction.SUBMIT, approver))
-        .toBe('deny:auth');
+      expect(
+        check(ApplicationState.DRAFT, WorkflowAction.SUBMIT, approver),
+      ).toBe('deny:auth');
     });
 
     it('cannot START_REVIEW (reviewer-only)', () => {
-      expect(check(ApplicationState.SUBMITTED, WorkflowAction.START_REVIEW, approver))
-        .toBe('deny:auth');
+      expect(
+        check(
+          ApplicationState.SUBMITTED,
+          WorkflowAction.START_REVIEW,
+          approver,
+        ),
+      ).toBe('deny:auth');
     });
 
     it('cannot REQUEST_INFO (reviewer-only)', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.REQUEST_INFO, approver))
-        .toBe('deny:auth');
+      expect(
+        check(
+          ApplicationState.UNDER_REVIEW,
+          WorkflowAction.REQUEST_INFO,
+          approver,
+        ),
+      ).toBe('deny:auth');
     });
 
     it('cannot act on terminal states (APPROVED → REJECT)', () => {
-      expect(check(ApplicationState.APPROVED, WorkflowAction.REJECT, approver))
-        .toBe('deny:illegal');
+      expect(
+        check(ApplicationState.APPROVED, WorkflowAction.REJECT, approver),
+      ).toBe('deny:illegal');
     });
 
     it('cannot act on terminal states (REJECTED → APPROVE)', () => {
-      expect(check(ApplicationState.REJECTED, WorkflowAction.APPROVE, approver))
-        .toBe('deny:illegal');
+      expect(
+        check(ApplicationState.REJECTED, WorkflowAction.APPROVE, approver),
+      ).toBe('deny:illegal');
     });
   });
 
@@ -257,33 +307,43 @@ describe('authorization matrix — what each role can do', () => {
     const admin = actor(UserRole.ADMIN);
 
     it('cannot SUBMIT', () => {
-      expect(check(ApplicationState.DRAFT, WorkflowAction.SUBMIT, admin))
-        .toBe('deny:auth');
+      expect(check(ApplicationState.DRAFT, WorkflowAction.SUBMIT, admin)).toBe(
+        'deny:auth',
+      );
     });
 
     it('cannot START_REVIEW', () => {
-      expect(check(ApplicationState.SUBMITTED, WorkflowAction.START_REVIEW, admin))
-        .toBe('deny:auth');
+      expect(
+        check(ApplicationState.SUBMITTED, WorkflowAction.START_REVIEW, admin),
+      ).toBe('deny:auth');
     });
 
     it('cannot REQUEST_INFO', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.REQUEST_INFO, admin))
-        .toBe('deny:auth');
+      expect(
+        check(
+          ApplicationState.UNDER_REVIEW,
+          WorkflowAction.REQUEST_INFO,
+          admin,
+        ),
+      ).toBe('deny:auth');
     });
 
     it('cannot APPROVE', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.APPROVE, admin))
-        .toBe('deny:auth');
+      expect(
+        check(ApplicationState.UNDER_REVIEW, WorkflowAction.APPROVE, admin),
+      ).toBe('deny:auth');
     });
 
     it('cannot REJECT', () => {
-      expect(check(ApplicationState.UNDER_REVIEW, WorkflowAction.REJECT, admin))
-        .toBe('deny:auth');
+      expect(
+        check(ApplicationState.UNDER_REVIEW, WorkflowAction.REJECT, admin),
+      ).toBe('deny:auth');
     });
 
     it('cannot RESUBMIT', () => {
-      expect(check(ApplicationState.INFO_REQUESTED, WorkflowAction.RESUBMIT, admin))
-        .toBe('deny:auth');
+      expect(
+        check(ApplicationState.INFO_REQUESTED, WorkflowAction.RESUBMIT, admin),
+      ).toBe('deny:auth');
     });
   });
 
@@ -294,8 +354,9 @@ describe('authorization matrix — what each role can do', () => {
   describe('availableActions reflects role + relationship', () => {
     it('owner-applicant on DRAFT sees only SUBMIT', () => {
       const a = actor(UserRole.APPLICANT, { isApplicant: true });
-      expect(availableActions(ApplicationState.DRAFT, a))
-        .toEqual([WorkflowAction.SUBMIT]);
+      expect(availableActions(ApplicationState.DRAFT, a)).toEqual([
+        WorkflowAction.SUBMIT,
+      ]);
     });
 
     it('non-owner applicant on DRAFT sees nothing', () => {
@@ -305,17 +366,16 @@ describe('authorization matrix — what each role can do', () => {
 
     it('reviewer on SUBMITTED sees START_REVIEW (any reviewer)', () => {
       const a = actor(UserRole.REVIEWER);
-      expect(availableActions(ApplicationState.SUBMITTED, a))
-        .toEqual([WorkflowAction.START_REVIEW]);
+      expect(availableActions(ApplicationState.SUBMITTED, a)).toEqual([
+        WorkflowAction.START_REVIEW,
+      ]);
     });
 
     it('approver on UNDER_REVIEW sees APPROVE + REJECT', () => {
       const a = actor(UserRole.APPROVER);
-      expect(availableActions(ApplicationState.UNDER_REVIEW, a))
-        .toEqual(expect.arrayContaining([
-          WorkflowAction.APPROVE,
-          WorkflowAction.REJECT,
-        ]));
+      expect(availableActions(ApplicationState.UNDER_REVIEW, a)).toEqual(
+        expect.arrayContaining([WorkflowAction.APPROVE, WorkflowAction.REJECT]),
+      );
     });
 
     it('admin sees no workflow actions in any state', () => {

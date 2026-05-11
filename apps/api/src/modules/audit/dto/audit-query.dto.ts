@@ -28,7 +28,10 @@ export class AuditQueryDto {
   @IsUUID()
   actorId?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by application id (also enforced as an existence check)' })
+  @ApiPropertyOptional({
+    description:
+      'Filter by application id (also enforced as an existence check)',
+  })
   @IsOptional()
   @IsUUID()
   applicationId?: string;
@@ -38,12 +41,16 @@ export class AuditQueryDto {
   @IsEnum(AuditAction)
   action?: AuditAction;
 
-  @ApiPropertyOptional({ description: 'ISO 8601 inclusive lower bound on occurredAt' })
+  @ApiPropertyOptional({
+    description: 'ISO 8601 inclusive lower bound on occurredAt',
+  })
   @IsOptional()
   @IsISO8601()
   from?: string;
 
-  @ApiPropertyOptional({ description: 'ISO 8601 inclusive upper bound on occurredAt' })
+  @ApiPropertyOptional({
+    description: 'ISO 8601 inclusive upper bound on occurredAt',
+  })
   @IsOptional()
   @IsISO8601()
   to?: string;
@@ -56,7 +63,9 @@ export class AuditQueryDto {
   @Max(200)
   limit?: number;
 
-  @ApiPropertyOptional({ description: 'id of the last row from the previous page' })
+  @ApiPropertyOptional({
+    description: 'id of the last row from the previous page',
+  })
   @IsOptional()
   @IsUUID()
   cursor?: string;

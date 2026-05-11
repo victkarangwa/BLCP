@@ -37,9 +37,7 @@ import { CsrfMiddleware } from './modules/auth/middleware/csrf.middleware';
       validationSchema,
       validationOptions: { abortEarly: true },
     }),
-    ThrottlerModule.forRoot([
-      { name: 'default', ttl: 60_000, limit: 100 },
-    ]),
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 100 }]),
     PrismaModule,
     AuthModule,
     UsersModule,

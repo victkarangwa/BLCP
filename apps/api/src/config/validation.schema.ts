@@ -20,10 +20,14 @@ export const validationSchema = Joi.object({
     'any.required': 'JWT_SECRET is required.',
   }),
 
-  DATABASE_URL: Joi.string().uri({ scheme: ['postgresql', 'postgres'] }).required(),
+  DATABASE_URL: Joi.string()
+    .uri({ scheme: ['postgresql', 'postgres'] })
+    .required(),
   // ADMIN_URL is only needed for migrations/seeding, not at runtime.
   // Optional here so the running app doesn't fail if it's missing.
-  DATABASE_ADMIN_URL: Joi.string().uri({ scheme: ['postgresql', 'postgres'] }).optional(),
+  DATABASE_ADMIN_URL: Joi.string()
+    .uri({ scheme: ['postgresql', 'postgres'] })
+    .optional(),
 
   FRONTEND_ORIGIN: Joi.string().uri().required(),
   STORAGE_ROOT: Joi.string().default('./storage'),

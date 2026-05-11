@@ -99,12 +99,14 @@ export class WorkflowService {
       //    catch a violation too, but failing here gives a clear 403 with a
       //    specific error code instead of a generic constraint violation 500.
       if (
-        (action === WorkflowAction.APPROVE || action === WorkflowAction.REJECT) &&
+        (action === WorkflowAction.APPROVE ||
+          action === WorkflowAction.REJECT) &&
         app.reviewerId === user.id
       ) {
         throw new ForbiddenException({
           code: 'FORBIDDEN',
-          message: 'The same user cannot review and approve the same application',
+          message:
+            'The same user cannot review and approve the same application',
         });
       }
 

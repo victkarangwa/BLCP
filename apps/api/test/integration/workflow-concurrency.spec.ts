@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Concurrency integration test — the showstopper.
  *
@@ -79,9 +78,24 @@ describe('concurrent workflow transitions — exactly one wins', () => {
   let app: INestApplicationContext;
   let workflow: WorkflowService;
   let applications: ApplicationsService;
-  let applicant: { id: string; email: string; fullName: string; role: UserRole };
-  let reviewerA: { id: string; email: string; fullName: string; role: UserRole };
-  let reviewerB: { id: string; email: string; fullName: string; role: UserRole };
+  let applicant: {
+    id: string;
+    email: string;
+    fullName: string;
+    role: UserRole;
+  };
+  let reviewerA: {
+    id: string;
+    email: string;
+    fullName: string;
+    role: UserRole;
+  };
+  let reviewerB: {
+    id: string;
+    email: string;
+    fullName: string;
+    role: UserRole;
+  };
 
   beforeAll(async () => {
     // createApplicationContext skips HTTP listener / lifecycle hooks for
@@ -200,10 +214,17 @@ describe('concurrent workflow transitions — exactly one wins', () => {
     // ILLEGAL_STATE_TRANSITION (loser's load saw the new state after
     // the winner committed) — both are correct outcomes from the
     // client's perspective: "this changed under me, refetch and decide."
-    const loser = (rejected[0] as PromiseRejectedResult).reason;
-    const loserPayload = loser?.response ?? loser;
-    expect(['CONCURRENT_MODIFICATION', 'ILLEGAL_STATE_TRANSITION'])
-      .toContain(loserPayload.code);
+    // The rejected reason is the thrown Nest exception; we read the
+    // structured payload (either `.response` on Nest's HttpException
+    // subclasses or the error itself) and look at `code`.
+    const loser = rejected[0].reason as {
+      response?: { code?: string };
+      code?: string;
+    };
+    const loserCode = loser?.response?.code ?? loser?.code;
+    expect(['CONCURRENT_MODIFICATION', 'ILLEGAL_STATE_TRANSITION']).toContain(
+      loserCode,
+    );
 
     // Assert DB state: row was updated exactly once, by one of the two reviewers.
     const final = await prisma.application.findUniqueOrThrow({

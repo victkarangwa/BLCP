@@ -18,7 +18,8 @@ export class UploadDocumentMetaDto {
   @MinLength(2)
   @MaxLength(64)
   @Matches(/^[A-Z0-9_-]+$/, {
-    message: 'documentType must be uppercase letters, digits, underscores or hyphens',
+    message:
+      'documentType must be uppercase letters, digits, underscores or hyphens',
   })
   documentType!: string;
 }

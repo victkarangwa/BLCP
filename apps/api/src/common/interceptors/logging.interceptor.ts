@@ -24,7 +24,9 @@ export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger('Http');
 
   intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const req = ctx.switchToHttp().getRequest<Request & { user?: { id: string } }>();
+    const req = ctx
+      .switchToHttp()
+      .getRequest<Request & { user?: { id: string } }>();
     const res = ctx.switchToHttp().getResponse<Response>();
 
     const requestId = (req.headers['x-request-id'] as string) ?? randomUUID();

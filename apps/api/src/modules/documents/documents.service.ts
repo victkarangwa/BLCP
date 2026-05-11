@@ -9,16 +9,15 @@ import {
 } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { extname } from 'path';
-import {
-  ApplicationState,
-  AuditAction,
-  Prisma,
-} from '@prisma/client';
+import { ApplicationState, AuditAction, Prisma } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
 import { isTerminal } from '../applications/workflow/state-machine';
-import { STORAGE_SERVICE, type StorageService } from './storage/storage.interface';
+import {
+  STORAGE_SERVICE,
+  type StorageService,
+} from './storage/storage.interface';
 
 /**
  * DocumentsService — upload, list, stream.
@@ -233,7 +232,8 @@ export class DocumentsService {
         // Unique-constraint race: someone else inserted version N first.
         throw new ConflictException({
           code: 'CONCURRENT_MODIFICATION',
-          message: 'Another document version was uploaded concurrently. Try again.',
+          message:
+            'Another document version was uploaded concurrently. Try again.',
         });
       }
       throw err;
@@ -276,7 +276,7 @@ export class DocumentsService {
     // Group: pick the highest version per type, count siblings.
     const byType = new Map<
       string,
-      { latest: typeof rows[number]; totalVersions: number }
+      { latest: (typeof rows)[number]; totalVersions: number }
     >();
     for (const r of rows) {
       const existing = byType.get(r.documentType);

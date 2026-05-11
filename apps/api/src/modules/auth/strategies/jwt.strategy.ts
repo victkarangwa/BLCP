@@ -52,7 +52,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       // Read JWT from the httpOnly cookie, NOT the Authorization header.
       // Bearer tokens via Authorization header would defeat the XSS-resistance
       // we get from httpOnly cookies — JS would have to handle the token.
-      jwtFromRequest: (req: Request) => req?.cookies?.bnr_session ?? null,
+      jwtFromRequest: (req: Request): string | null =>
+        readCookie(req, 'bnr_session') ?? null,
       ignoreExpiration: false,
       secretOrKey: config.getOrThrow<string>('JWT_SECRET'),
     });
@@ -83,4 +84,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       sessionId: session.id,
     };
   }
+}
+
+/**
+ * Safe accessor for a cookie value. cookie-parser populates `req.cookies`
+ * but @types/express doesn't model it; narrow through unknown rather than
+ * `as` casting through a typed shape that would launder away `any`.
+ */
+function readCookie(req: Request, name: string): string | undefined {
+  const cookies: unknown = (req as unknown as { cookies?: unknown }).cookies;
+  if (typeof cookies !== 'object' || cookies === null) return undefined;
+  const value = (cookies as Record<string, unknown>)[name];
+  return typeof value === 'string' ? value : undefined;
 }

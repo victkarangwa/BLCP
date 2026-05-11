@@ -86,9 +86,9 @@ export function availableActions(
   from: ApplicationState,
   actor: ActorContext,
 ): WorkflowAction[] {
-  return TRANSITIONS
-    .filter((t) => t.from === from && t.canAct(actor))
-    .map((t) => t.action);
+  return TRANSITIONS.filter((t) => t.from === from && t.canAct(actor)).map(
+    (t) => t.action,
+  );
 }
 
 /**

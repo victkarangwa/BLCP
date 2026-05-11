@@ -76,9 +76,7 @@ export class AuditService {
 
   private toRow(entry: AuditEntry): Prisma.AuditLogCreateInput {
     return {
-      actor: entry.actorId
-        ? { connect: { id: entry.actorId } }
-        : undefined,
+      actor: entry.actorId ? { connect: { id: entry.actorId } } : undefined,
       actorEmail: entry.actorEmail,
       actorRole: entry.actorRole ?? undefined,
       action: entry.action,

@@ -77,7 +77,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const response = exception.getResponse();
-      const { code, message, details } = this.normalizeNestException(response, status);
+      const { code, message, details } = this.normalizeNestException(
+        response,
+        status,
+      );
       return { status, body: { error: { code, message, requestId, details } } };
     }
 
@@ -120,7 +123,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
         return {
           status: HttpStatus.CONFLICT,
           body: {
-            error: { code: 'DUPLICATE_RESOURCE', message: 'Resource already exists', requestId },
+            error: {
+              code: 'DUPLICATE_RESOURCE',
+              message: 'Resource already exists',
+              requestId,
+            },
           },
         };
       }
@@ -128,7 +135,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
         return {
           status: HttpStatus.NOT_FOUND,
           body: {
-            error: { code: 'NOT_FOUND', message: 'Resource not found', requestId },
+            error: {
+              code: 'NOT_FOUND',
+              message: 'Resource not found',
+              requestId,
+            },
           },
         };
       }
@@ -153,11 +164,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
   ): { code: string; message: string; details?: Record<string, unknown> } {
     // Validation pipe returns { message: string[], error: 'Bad Request' }.
     if (
-      status === HttpStatus.BAD_REQUEST &&
+      status === 400 &&
       typeof response === 'object' &&
       response !== null &&
       'message' in response &&
-      Array.isArray((response as { message: unknown }).message)
+      Array.isArray(response.message)
     ) {
       return {
         code: 'VALIDATION_FAILED',

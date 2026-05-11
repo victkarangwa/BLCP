@@ -19,7 +19,10 @@ export abstract class DomainError extends Error {
 export class IllegalStateTransitionError extends DomainError {
   readonly code = 'ILLEGAL_STATE_TRANSITION';
   readonly httpStatus = 409;
-  constructor(public readonly from: string, public readonly action: string) {
+  constructor(
+    public readonly from: string,
+    public readonly action: string,
+  ) {
     super(`Action ${action} is not allowed from state ${from}`);
     this.name = 'IllegalStateTransitionError';
   }

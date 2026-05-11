@@ -47,7 +47,9 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('BNR Bank Licensing & Compliance Portal')
-    .setDescription('Internal API for license applications, review, approval, and audit.')
+    .setDescription(
+      'Internal API for license applications, review, approval, and audit.',
+    )
     .setVersion('1.0.0')
     .addCookieAuth('bnr_session')
     .build();
@@ -60,4 +62,4 @@ async function bootstrap() {
   logger.log(`Swagger UI on http://localhost:${port}/api/docs`);
 }
 
-bootstrap();
+void bootstrap();

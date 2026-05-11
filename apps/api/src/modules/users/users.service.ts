@@ -9,11 +9,7 @@ import { Prisma, User, UserRole, AuditAction } from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
-import {
-  CreateUserDto,
-  UpdateUserDto,
-  ListUsersQuery,
-} from './dto';
+import { CreateUserDto, UpdateUserDto, ListUsersQuery } from './dto';
 
 /**
  * UsersService — credential lookup + admin user management.
@@ -69,7 +65,11 @@ export class UsersService {
    * Returns safe fields only (no passwordHash). The audit row records
    * the actor (admin), the new user's id, and their assigned role.
    */
-  async create(dto: CreateUserDto, admin: AuthenticatedUser, meta: RequestMeta) {
+  async create(
+    dto: CreateUserDto,
+    admin: AuthenticatedUser,
+    meta: RequestMeta,
+  ) {
     const passwordHash = await argon2.hash(dto.password, ARGON2_OPTIONS);
 
     // Unique-email collisions surface as P2002 from Prisma; the global
@@ -116,9 +116,7 @@ export class UsersService {
       where,
       orderBy: { createdAt: 'desc' },
       take: limit + 1,
-      ...(query.cursor
-        ? { cursor: { id: query.cursor }, skip: 1 }
-        : {}),
+      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
       select: this.safeUserSelect,
     });
 
@@ -155,9 +153,7 @@ export class UsersService {
         );
       }
       if (dto.role && dto.role !== UserRole.ADMIN) {
-        throw new ForbiddenException(
-          'Admins cannot demote their own role',
-        );
+        throw new ForbiddenException('Admins cannot demote their own role');
       }
     }
 
@@ -179,8 +175,7 @@ export class UsersService {
       // the old role isn't carried in the JWT for up to an hour.
       const becameInactive =
         dto.isActive === false && existing.isActive === true;
-      const roleChanged =
-        dto.role !== undefined && dto.role !== existing.role;
+      const roleChanged = dto.role !== undefined && dto.role !== existing.role;
 
       if (becameInactive || roleChanged) {
         await tx.session.deleteMany({ where: { userId: id } });

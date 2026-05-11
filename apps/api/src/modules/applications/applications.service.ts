@@ -4,7 +4,12 @@ import {
   ForbiddenException,
   ConflictException,
 } from '@nestjs/common';
-import { Prisma, UserRole, ApplicationState, AuditAction } from '@prisma/client';
+import {
+  Prisma,
+  UserRole,
+  ApplicationState,
+  AuditAction,
+} from '@prisma/client';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
@@ -89,11 +94,7 @@ export class ApplicationsService {
 
   // ── Update (DRAFT only) ───────────────────────────────────────────────
 
-  async update(
-    id: string,
-    dto: UpdateApplicationDto,
-    user: AuthenticatedUser,
-  ) {
+  async update(id: string, dto: UpdateApplicationDto, user: AuthenticatedUser) {
     const app = await this.prisma.application.findFirst({
       where: { id, ...this.visibilityFilter(user) },
     });
@@ -101,7 +102,9 @@ export class ApplicationsService {
     if (!app) throw new NotFoundException();
 
     if (app.applicantId !== user.id) {
-      throw new ForbiddenException('Only the applicant can edit this application');
+      throw new ForbiddenException(
+        'Only the applicant can edit this application',
+      );
     }
     if (app.state !== ApplicationState.DRAFT) {
       // Editing post-submission would let applicants change what was
@@ -125,8 +128,8 @@ export class ApplicationsService {
       where: { id, ...this.visibilityFilter(user) },
       include: {
         applicant: { select: { id: true, fullName: true, email: true } },
-        reviewer:  { select: { id: true, fullName: true, email: true } },
-        approver:  { select: { id: true, fullName: true, email: true } },
+        reviewer: { select: { id: true, fullName: true, email: true } },
+        approver: { select: { id: true, fullName: true, email: true } },
         documents: { orderBy: [{ documentType: 'asc' }, { version: 'desc' }] },
       },
     });
@@ -148,13 +151,11 @@ export class ApplicationsService {
       where,
       orderBy: { createdAt: 'desc' },
       take: limit + 1,
-      ...(query.cursor
-        ? { cursor: { id: query.cursor }, skip: 1 }
-        : {}),
+      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
       include: {
         applicant: { select: { id: true, fullName: true } },
-        reviewer:  { select: { id: true, fullName: true } },
-        approver:  { select: { id: true, fullName: true } },
+        reviewer: { select: { id: true, fullName: true } },
+        approver: { select: { id: true, fullName: true } },
       },
     });
 
@@ -168,7 +169,10 @@ export class ApplicationsService {
 
   // ── Available actions (UI driver) ─────────────────────────────────────
 
-  async availableActionsFor(id: string, user: AuthenticatedUser): Promise<{
+  async availableActionsFor(
+    id: string,
+    user: AuthenticatedUser,
+  ): Promise<{
     actions: WorkflowAction[];
     version: number;
     isTerminal: boolean;
@@ -226,7 +230,9 @@ export class ApplicationsService {
    * cursors work correctly, no chance of "leaking" an item via a bug in
    * filter logic later in the stack.
    */
-  private visibilityFilter(user: AuthenticatedUser): Prisma.ApplicationWhereInput {
+  private visibilityFilter(
+    user: AuthenticatedUser,
+  ): Prisma.ApplicationWhereInput {
     switch (user.role) {
       case UserRole.ADMIN:
         return {};

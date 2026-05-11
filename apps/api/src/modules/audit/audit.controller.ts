@@ -113,9 +113,7 @@ export class AuditController {
       where,
       orderBy: { occurredAt: 'desc' },
       take: limit + 1,
-      ...(query.cursor
-        ? { cursor: { id: query.cursor }, skip: 1 }
-        : {}),
+      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
       select: {
         id: true,
         actorId: true,
@@ -139,5 +137,4 @@ export class AuditController {
       nextCursor: hasMore ? trimmed[trimmed.length - 1].id : null,
     };
   }
-
 }

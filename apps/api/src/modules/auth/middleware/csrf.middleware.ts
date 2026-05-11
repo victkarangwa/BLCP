@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NestMiddleware,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NestMiddleware, ForbiddenException } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 
 /**
@@ -50,15 +46,12 @@ export class CsrfMiddleware implements NestMiddleware {
       return next();
     }
 
-    const cookieToken = req.cookies?.bnr_csrf;
-    const headerToken = req.headers['x-csrf-token'];
+    const cookieToken = readCookie(req, 'bnr_csrf');
+    const headerRaw = req.headers['x-csrf-token'];
+    const headerToken: string | undefined =
+      typeof headerRaw === 'string' ? headerRaw : undefined;
 
-    if (
-      !cookieToken ||
-      !headerToken ||
-      typeof headerToken !== 'string' ||
-      cookieToken !== headerToken
-    ) {
+    if (!cookieToken || !headerToken || cookieToken !== headerToken) {
       throw new ForbiddenException({
         code: 'CSRF_TOKEN_MISMATCH',
         message: 'CSRF token missing or mismatched',
@@ -66,4 +59,17 @@ export class CsrfMiddleware implements NestMiddleware {
     }
     next();
   }
+}
+
+/**
+ * Safe accessor for a cookie value. cookie-parser populates `req.cookies`
+ * but @types/express doesn't model it, so we narrow without an `as` cast
+ * that would launder away `any`. Returns undefined if the bag is missing
+ * or the value is not a string.
+ */
+function readCookie(req: Request, name: string): string | undefined {
+  const cookies: unknown = (req as unknown as { cookies?: unknown }).cookies;
+  if (typeof cookies !== 'object' || cookies === null) return undefined;
+  const value = (cookies as Record<string, unknown>)[name];
+  return typeof value === 'string' ? value : undefined;
 }
