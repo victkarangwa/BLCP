@@ -14,6 +14,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import type { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
+import { applicationVisibilityFilter } from '../applications/visibility';
 import { AuditQueryDto } from './dto/audit-query.dto';
 
 /**
@@ -49,30 +50,14 @@ export class AuditController {
     @Query() query: AuditQueryDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    // Existence + visibility check. We deliberately don't reuse
-    // ApplicationsService.findOne here because we want to 404 on either
-    // "doesn't exist" or "not an insider" — same response, no information
-    // leak about an unauthorized application's existence.
-    const app = await this.prisma.application.findUnique({
-      where: { id: applicationId },
-      select: {
-        applicantId: true,
-        reviewerId: true,
-        approverId: true,
+    const app = await this.prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        ...applicationVisibilityFilter(user),
       },
+      select: { id: true },
     });
     if (!app) throw new NotFoundException();
-
-    const isInsider =
-      user.role === UserRole.ADMIN ||
-      app.applicantId === user.id ||
-      app.reviewerId === user.id ||
-      app.approverId === user.id;
-
-    if (!isInsider) {
-      // 404 not 403 — don't confirm the application exists to a stranger.
-      throw new NotFoundException();
-    }
 
     return this.paginate({ applicationId }, query);
   }

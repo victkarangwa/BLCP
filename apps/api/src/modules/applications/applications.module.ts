@@ -11,9 +11,6 @@ import { AuthModule } from '../auth/auth.module';
  * Imports AuditModule (workflow + create actions write audit entries) and
  * AuthModule (for the RolesGuard re-used in the controller).
  *
- * Exports ApplicationsService so other modules (Documents will be next)
- * can do visibility-filtered application lookups without re-implementing
- * the row-level security rules.
  */
 @Module({
   imports: [AuditModule, AuthModule],
